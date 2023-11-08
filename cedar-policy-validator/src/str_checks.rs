@@ -15,65 +15,13 @@
  */
 
 use cedar_policy_core::ast::{Pattern, Template};
-use thiserror::Error;
 
+use crate::ValidationWarning;
+use crate::ValidationWarningKind;
 use crate::expr_iterator::expr_text;
 use crate::expr_iterator::TextKind;
-use crate::SourceLocation;
 use unicode_security::GeneralSecurityProfile;
 use unicode_security::MixedScript;
-
-/// Returned by the standalone `confusable_string_checker` function, which checks a policy set for potentially confusing/obfuscating text.
-#[derive(Debug, Clone)]
-pub struct ValidationWarning<'a> {
-    location: SourceLocation<'a>,
-    kind: ValidationWarningKind,
-}
-
-impl<'a> ValidationWarning<'a> {
-    pub fn location(&self) -> &SourceLocation<'a> {
-        &self.location
-    }
-
-    pub fn kind(&self) -> &ValidationWarningKind {
-        &self.kind
-    }
-
-    pub fn to_kind_and_location(self) -> (SourceLocation<'a>, ValidationWarningKind) {
-        (self.location, self.kind)
-    }
-}
-
-impl std::fmt::Display for ValidationWarning<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "validation warning on policy `{}`: {}",
-            self.location.policy_id(),
-            self.kind
-        )
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Error, Eq)]
-#[non_exhaustive]
-pub enum ValidationWarningKind {
-    /// A string contains mixed scripts. Different scripts can contain visually similar characters which may be confused for each other.
-    #[error("string `\"{0}\"` contains mixed scripts")]
-    MixedScriptString(String),
-    /// A string contains BIDI control characters. These can be used to create crafted pieces of code that obfuscate true control flow.
-    #[error("string `\"{0}\"` contains BIDI control characters")]
-    BidiCharsInString(String),
-    /// An id contains BIDI control characters. These can be used to create crafted pieces of code that obfuscate true control flow.
-    #[error("identifier `{0}` contains BIDI control characters")]
-    BidiCharsInIdentifier(String),
-    /// An id contains mixed scripts. This can cause characters to be confused for each other.
-    #[error("identifier `{0}` contains mixed scripts")]
-    MixedScriptIdentifier(String),
-    /// An id contains characters that fall outside of the General Security Profile for Identifiers. We recommend adhering to this if possible. See Unicode® Technical Standard #39 for more info.
-    #[error("identifier `{0}` contains characters that fall outside of the General Security Profile for Identifiers")]
-    ConfusableIdentifier(String),
-}
 
 /// Perform identifier and string safety checks.
 pub fn confusable_string_checks<'a>(
@@ -95,10 +43,7 @@ pub fn confusable_string_checks<'a>(
             };
 
             if let Some(w) = warning {
-                warnings.push(ValidationWarning {
-                    location: SourceLocation::new(policy.id(), loc.clone()),
-                    kind: w,
-                })
+                warnings.push(ValidationWarning::with_policy_id(policy.id(), loc.clone(), w))
             }
         }
     }
@@ -147,6 +92,8 @@ const BIDI_CHARS: [char; 9] = [
 #[allow(clippy::indexing_slicing)]
 #[cfg(test)]
 mod test {
+
+    use crate::SourceLocation;
 
     use super::*;
     use cedar_policy_core::{

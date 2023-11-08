@@ -33,7 +33,7 @@ use super::test_utils::{
     assert_typechecks,
 };
 use crate::{
-    type_error::TypeError,
+    type_error::TypeDiagnostic,
     types::{EntityLUB, Type},
     AttributeAccess, SchemaFragment, ValidatorSchema,
 };
@@ -71,7 +71,7 @@ fn assert_expr_typechecks_namespace_schema(e: Expr, t: Type) {
     assert_typechecks(namespaced_entity_type_schema(), e, t)
 }
 
-fn assert_expr_typecheck_fails_namespace_schema(e: Expr, t: Option<Type>, errs: Vec<TypeError>) {
+fn assert_expr_typecheck_fails_namespace_schema(e: Expr, t: Option<Type>, errs: Vec<TypeDiagnostic>) {
     assert_typecheck_fails(namespaced_entity_type_schema(), e, t, errs)
 }
 
@@ -133,7 +133,7 @@ fn namespaced_entity_can_type_error() {
     assert_expr_typecheck_fails_namespace_schema(
         Expr::from_str(r#"N::S::Foo::"alice" > 1"#).expect("Expr should parse."),
         Some(Type::primitive_boolean()),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::from_str(r#"N::S::Foo::"alice""#).expect("Expr should parse."),
             Type::primitive_long(),
             Type::named_entity_reference_from_str("N::S::Foo"),
@@ -353,7 +353,7 @@ fn multiple_namespaces_attributes() {
         schema,
         Expr::from_str("B::Foo::\"foo\".x").unwrap(),
         None,
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::from_str("B::Foo::\"foo\".x").unwrap(),
             AttributeAccess::EntityLUB(
                 EntityLUB::single_entity("B::Foo".parse().unwrap()),
@@ -472,7 +472,7 @@ fn multiple_namespaces_applies_to() {
 
 fn assert_policy_typecheck_fails_namespace_schema(
     p: StaticPolicy,
-    expected_type_errors: Vec<TypeError>,
+    expected_type_errors: Vec<TypeDiagnostic>,
 ) {
     assert_policy_typecheck_fails(namespaced_entity_type_schema(), p, expected_type_errors);
 }
@@ -491,7 +491,7 @@ fn namespaced_entity_is_wrong_type_and() {
     .expect("Policy should parse.");
     assert_policy_typecheck_fails_namespace_schema(
         policy,
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(r#"N::S::Foo::"alice""#.parse::<EntityUID>().expect("EUID should parse.")),
             Type::primitive_boolean(),
             Type::named_entity_reference_from_str("N::S::Foo"),
@@ -513,7 +513,7 @@ fn namespaced_entity_is_wrong_type_when() {
     .expect("Policy should parse.");
     assert_policy_typecheck_fails_namespace_schema(
         policy,
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(r#"N::S::Foo::"alice""#.parse::<EntityUID>().expect("EUID should parse.")),
             Type::primitive_boolean(),
             Type::named_entity_reference_from_str("N::S::Foo"),

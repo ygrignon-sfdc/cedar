@@ -37,7 +37,7 @@ pub use schema::*;
 mod schema_file_format;
 pub use schema_file_format::*;
 mod str_checks;
-pub use str_checks::{confusable_string_checks, ValidationWarning, ValidationWarningKind};
+pub use str_checks::confusable_string_checks;
 mod type_error;
 pub use type_error::*;
 pub mod typecheck;
@@ -441,7 +441,7 @@ mod test {
                 .map(|err| err.error_kind())
                 .collect::<Vec<_>>(),
             vec![&ValidationErrorKind::type_error(
-                TypeError::expected_type(
+                TypeDiagnostic::expected_type(
                     Expr::val(1),
                     Type::primitive_long(),
                     Type::singleton_boolean(true)

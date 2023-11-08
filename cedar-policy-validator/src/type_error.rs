@@ -35,7 +35,7 @@ use thiserror::Error;
 /// triggered the type error, as well as additional information for specific
 /// kinds of type errors.
 #[derive(Debug, Hash, PartialEq, Eq)]
-pub struct TypeError {
+pub struct TypeDiagnostic {
     // This struct has `on_expr` and `source_location` because many tests were
     // written to check that an error was raised on a particular expression
     // rather than at a source location. We can eliminate an AST clone by
@@ -46,7 +46,7 @@ pub struct TypeError {
     pub(crate) kind: TypeErrorKind,
 }
 
-impl TypeError {
+impl TypeDiagnostic {
     /// Extract the type error kind for this type error.
     pub fn type_error_kind(self) -> TypeErrorKind {
         self.kind_and_location().0
@@ -197,13 +197,18 @@ impl TypeError {
     }
 }
 
-impl Display for TypeError {
+impl Display for TypeDiagnostic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.kind.fmt(f)
     }
 }
 
-impl std::error::Error for TypeError {}
+impl std::error::Error for TypeDiagnostic {}
+
+pub enum TypeErrorOrWarningKind {
+    TypeErrorKind(TypeErrorKind),
+    TypeWarningKind(TypeWarningKind),
+}
 
 /// Represents the different kinds of type errors and contains information
 /// specific to that type error kind.
@@ -278,6 +283,12 @@ pub enum TypeErrorKind {
         })]
     HierarchyNotRespected(HierarchyNotRespected),
 }
+
+/// Represents the different kinds of warnings found by the typechecker and contains information
+/// specific to that type error kind.
+#[derive(Clone, Debug, Error, Hash, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum TypeWarningKind { }
 
 /// Structure containing details about an unexpected type error.
 #[derive(Debug, Hash, Eq, PartialEq)]

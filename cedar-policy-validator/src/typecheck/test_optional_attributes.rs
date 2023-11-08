@@ -26,7 +26,7 @@ use cedar_policy_core::{
 use smol_str::SmolStr;
 
 use crate::{
-    type_error::TypeError, types::EntityLUB, AttributeAccess, NamespaceDefinition,
+    type_error::TypeDiagnostic, types::EntityLUB, AttributeAccess, NamespaceDefinition,
     NamespaceDefinitionWithActionAttributes,
 };
 
@@ -67,7 +67,7 @@ fn assert_policy_typechecks_optional_schema(p: StaticPolicy) {
 
 fn assert_policy_typecheck_fails_optional_schema(
     p: StaticPolicy,
-    expected_type_errors: Vec<TypeError>,
+    expected_type_errors: Vec<TypeDiagnostic>,
 ) {
     assert_policy_typecheck_fails(schema_with_optionals(), p, expected_type_errors);
 }
@@ -316,7 +316,7 @@ fn assert_name_access_fails(policy: StaticPolicy) {
     let optional_attr: SmolStr = "name".into();
     assert_policy_typecheck_fails_optional_schema(
         policy,
-        vec![TypeError::unsafe_optional_attribute_access(
+        vec![TypeDiagnostic::unsafe_optional_attribute_access(
             Expr::get_attr(Expr::var(Var::Principal), optional_attr.clone()),
             AttributeAccess::EntityLUB(
                 EntityLUB::single_entity("User".parse().unwrap()),
@@ -581,7 +581,7 @@ fn record_optional_attrs() {
     assert_policy_typecheck_fails(
         schema.clone(),
         failing_policy,
-        vec![TypeError::unsafe_optional_attribute_access(
+        vec![TypeDiagnostic::unsafe_optional_attribute_access(
             Expr::get_attr(
                 Expr::get_attr(Expr::var(Var::Principal), "record".into()),
                 "name".into(),
@@ -601,7 +601,7 @@ fn record_optional_attrs() {
     assert_policy_typecheck_fails(
         schema,
         failing_policy2,
-        vec![TypeError::unsafe_optional_attribute_access(
+        vec![TypeDiagnostic::unsafe_optional_attribute_access(
             Expr::get_attr(Expr::var(Var::Principal), "name".into()),
             AttributeAccess::EntityLUB(
                 EntityLUB::single_entity("User".parse().unwrap()),
@@ -765,7 +765,7 @@ fn action_attrs_failing() {
     assert_policy_typecheck_fails(
         schema.clone(),
         failing_policy,
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(Expr::var(Var::Action), "canUndo".into()),
             AttributeAccess::Other(vec!["canUndo".into()]),
             Some("isReadOnly".to_string()),
@@ -783,7 +783,7 @@ fn action_attrs_failing() {
     assert_policy_typecheck_fails(
         schema.clone(),
         failing_policy,
-        vec![TypeError::impossible_policy(Expr::and(
+        vec![TypeDiagnostic::impossible_policy(Expr::and(
             Expr::and(
                 Expr::and(
                     Expr::val(true),

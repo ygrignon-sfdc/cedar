@@ -22,7 +22,7 @@ use cedar_policy_core::{
     parser::parse_policy,
 };
 
-use crate::{type_error::TypeError, AttributeAccess, NamespaceDefinition};
+use crate::{type_error::TypeDiagnostic, AttributeAccess, NamespaceDefinition};
 
 use super::test_utils;
 
@@ -67,7 +67,7 @@ fn assert_policy_typechecks(p: StaticPolicy) {
     test_utils::assert_policy_typechecks(schema_with_unspecified(), p);
 }
 
-fn assert_policy_typecheck_fails(p: StaticPolicy, expected_type_errors: Vec<TypeError>) {
+fn assert_policy_typecheck_fails(p: StaticPolicy, expected_type_errors: Vec<TypeDiagnostic>) {
     test_utils::assert_policy_typecheck_fails(schema_with_unspecified(), p, expected_type_errors);
 }
 
@@ -87,7 +87,7 @@ fn spec_principal_unspec_resource() {
     .expect("Policy should parse.");
     assert_policy_typecheck_fails(
         policy,
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(Expr::var(Var::Resource), "name".into()),
             AttributeAccess::Other(vec!["name".into()]),
             None,
@@ -105,7 +105,7 @@ fn spec_resource_unspec_principal() {
     .expect("Policy should parse.");
     assert_policy_typecheck_fails(
         policy,
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(Expr::var(Var::Principal), "name".into()),
             AttributeAccess::Other(vec!["name".into()]),
             None,
@@ -130,7 +130,7 @@ fn unspec_resource_unspec_principal() {
     .expect("Policy should parse.");
     assert_policy_typecheck_fails(
         policy,
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(Expr::var(Var::Principal), "name".into()),
             AttributeAccess::Other(vec!["name".into()]),
             None,
@@ -145,7 +145,7 @@ fn unspec_resource_unspec_principal() {
     .expect("Policy should parse.");
     assert_policy_typecheck_fails(
         policy,
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(Expr::var(Var::Resource), "name".into()),
             AttributeAccess::Other(vec!["name".into()]),
             None,

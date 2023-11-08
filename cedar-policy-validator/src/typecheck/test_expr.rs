@@ -26,8 +26,8 @@ use serde_json::json;
 use smol_str::SmolStr;
 
 use crate::{
-    type_error::TypeError, types::Type, AttributeAccess, AttributesOrContext, EntityType,
-    NamespaceDefinition, SchemaFragment, ValidationMode,
+    type_error::TypeDiagnostic, types::Type, AttributeAccess, AttributesOrContext, EntityType,
+    NamespaceDefinition, ValidationMode, SchemaFragment,
 };
 
 use super::test_utils::{
@@ -141,7 +141,7 @@ fn heterogeneous_set() {
     let set = Expr::set([Expr::val(true), Expr::val(1)]);
     assert_typecheck_fails_empty_schema_without_type(
         set.clone(),
-        vec![TypeError::incompatible_types(
+        vec![TypeDiagnostic::incompatible_types(
             set,
             vec![Type::singleton_boolean(true), Type::primitive_long()],
         )],
@@ -169,7 +169,7 @@ fn and_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::and(Expr::val(1), Expr::val(true)),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::primitive_boolean(),
             Type::primitive_long(),
@@ -178,7 +178,7 @@ fn and_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::and(Expr::greater(Expr::val(1), Expr::val(0)), Expr::val(1)),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::primitive_boolean(),
             Type::primitive_long(),
@@ -190,7 +190,7 @@ fn and_typecheck_fails() {
             Expr::val(true),
         ),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(true),
             Type::primitive_long(),
             Type::singleton_boolean(true),
@@ -202,7 +202,7 @@ fn and_typecheck_fails() {
             Expr::greater(Expr::val(1), Expr::val(true)),
         ),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(true),
             Type::primitive_long(),
             Type::singleton_boolean(true),
@@ -239,7 +239,7 @@ fn or_right_true_fails_left() {
     assert_typecheck_fails_empty_schema(
         Expr::or(Expr::val(1), Expr::val(true)),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::primitive_boolean(),
             Type::primitive_long(),
@@ -287,7 +287,7 @@ fn or_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::or(Expr::val(1), Expr::val(true)),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::primitive_boolean(),
             Type::primitive_long(),
@@ -296,7 +296,7 @@ fn or_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::or(Expr::greater(Expr::val(1), Expr::val(0)), Expr::val(1)),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::primitive_boolean(),
             Type::primitive_long(),
@@ -308,7 +308,7 @@ fn or_typecheck_fails() {
             Expr::val(false),
         ),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(true),
             Type::primitive_long(),
             Type::singleton_boolean(true),
@@ -320,7 +320,7 @@ fn or_typecheck_fails() {
             Expr::val(true),
         ),
         Type::singleton_boolean(true),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(true),
             Type::primitive_long(),
             Type::singleton_boolean(true),
@@ -332,7 +332,7 @@ fn or_typecheck_fails() {
             Expr::greater(Expr::val(1), Expr::val(true)),
         ),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(true),
             Type::primitive_long(),
             Type::singleton_boolean(true),
@@ -588,7 +588,7 @@ fn has_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::has_attr(Expr::val(true), "attr".into()),
         Type::primitive_boolean(),
-        vec![TypeError::expected_one_of_types(
+        vec![TypeDiagnostic::expected_one_of_types(
             Expr::val(true),
             vec![Type::any_entity_reference(), Type::any_record()],
             Type::singleton_boolean(true),
@@ -618,7 +618,7 @@ fn record_get_attr_incompatible() {
         empty_schema_file(),
         Expr::get_attr(if_expr.clone(), attr.clone()),
         None,
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(if_expr, attr.clone()),
             AttributeAccess::Other(vec![attr]),
             None,
@@ -632,7 +632,7 @@ fn record_get_attr_incompatible() {
 fn record_get_attr_typecheck_fails() {
     assert_typecheck_fails_empty_schema_without_type(
         Expr::get_attr(Expr::val(2), "foo".into()),
-        vec![TypeError::expected_one_of_types(
+        vec![TypeDiagnostic::expected_one_of_types(
             Expr::val(2),
             vec![Type::any_entity_reference(), Type::any_record()],
             Type::primitive_long(),
@@ -650,7 +650,7 @@ fn record_get_attr_lub_typecheck_fails() {
     );
     assert_typecheck_fails_empty_schema_without_type(
         Expr::get_attr(if_expr.clone(), attr.clone()),
-        vec![TypeError::incompatible_types(
+        vec![TypeDiagnostic::incompatible_types(
             if_expr,
             vec![
                 Type::closed_record_with_required_attributes([(
@@ -668,7 +668,7 @@ fn record_get_attr_does_not_exist() {
     let attr: SmolStr = "foo".into();
     assert_typecheck_fails_empty_schema_without_type(
         Expr::get_attr(Expr::record([]).unwrap(), attr.clone()),
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(Expr::record([]).unwrap(), attr.clone()),
             AttributeAccess::Other(vec![attr]),
             None,
@@ -687,7 +687,7 @@ fn record_get_attr_lub_does_not_exist() {
     );
     assert_typecheck_fails_empty_schema_without_type(
         Expr::get_attr(if_expr.clone(), attr.clone()),
-        vec![TypeError::unsafe_attribute_access(
+        vec![TypeDiagnostic::unsafe_attribute_access(
             Expr::get_attr(if_expr, attr.clone()),
             AttributeAccess::Other(vec![attr]),
             None,
@@ -740,12 +740,12 @@ fn in_typecheck_fails() {
         Expr::is_in(Expr::val(0), Expr::val(true)),
         Type::primitive_boolean(),
         vec![
-            TypeError::expected_type(
+            TypeDiagnostic::expected_type(
                 Expr::val(0),
                 Type::any_entity_reference(),
                 Type::primitive_long(),
             ),
-            TypeError::expected_one_of_types(
+            TypeDiagnostic::expected_one_of_types(
                 Expr::val(true),
                 vec![
                     Type::set(Type::any_entity_reference()),
@@ -771,7 +771,7 @@ fn contains_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::contains(Expr::val("foo"), Expr::val("bar")),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val("foo"),
             Type::any_set(),
             Type::primitive_string(),
@@ -780,7 +780,7 @@ fn contains_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::contains(Expr::val(1), Expr::val("bar")),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::any_set(),
             Type::primitive_long(),
@@ -792,7 +792,7 @@ fn contains_typecheck_fails() {
             Expr::val("foo"),
         ),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::record([("foo".into(), Expr::val(1))]).unwrap(),
             Type::any_set(),
             Type::closed_record_with_attributes([(
@@ -846,8 +846,8 @@ fn contains_all_typecheck_fails() {
         Expr::contains_all(Expr::val(1), Expr::val(true)),
         Type::primitive_boolean(),
         vec![
-            TypeError::expected_type(Expr::val(1), Type::any_set(), Type::primitive_long()),
-            TypeError::expected_type(
+            TypeDiagnostic::expected_type(Expr::val(1), Type::any_set(), Type::primitive_long()),
+            TypeDiagnostic::expected_type(
                 Expr::val(true),
                 Type::any_set(),
                 Type::singleton_boolean(true),
@@ -912,7 +912,7 @@ fn like_typecheck_fails() {
             ],
         ),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::primitive_string(),
             Type::primitive_long(),
@@ -934,12 +934,12 @@ fn less_than_typecheck_fails() {
         Expr::less(Expr::val(true), Expr::val(false)),
         Type::primitive_boolean(),
         vec![
-            TypeError::expected_type(
+            TypeDiagnostic::expected_type(
                 Expr::val(true),
                 Type::primitive_long(),
                 Type::singleton_boolean(true),
             ),
-            TypeError::expected_type(
+            TypeDiagnostic::expected_type(
                 Expr::val(false),
                 Type::primitive_long(),
                 Type::singleton_boolean(false),
@@ -959,7 +959,7 @@ fn not_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         Expr::not(Expr::val(1)),
         Type::primitive_boolean(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::primitive_boolean(),
             Type::primitive_long(),
@@ -1000,7 +1000,7 @@ fn if_no_lub_error() {
     );
     assert_typecheck_fails_empty_schema_without_type(
         if_expr.clone(),
-        vec![TypeError::incompatible_types(
+        vec![TypeDiagnostic::incompatible_types(
             if_expr,
             vec![Type::primitive_long(), Type::primitive_string()],
         )],
@@ -1013,11 +1013,11 @@ fn if_typecheck_fails() {
     assert_typecheck_fails_empty_schema_without_type(
         if_expr.clone(),
         vec![
-            TypeError::incompatible_types(
+            TypeDiagnostic::incompatible_types(
                 if_expr,
                 vec![Type::primitive_long(), Type::primitive_string()],
             ),
-            TypeError::expected_type(
+            TypeDiagnostic::expected_type(
                 Expr::val("fail"),
                 Type::primitive_boolean(),
                 Type::primitive_string(),
@@ -1038,7 +1038,7 @@ fn neg_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         neg_expr,
         Type::primitive_long(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val("foo"),
             Type::primitive_long(),
             Type::primitive_string(),
@@ -1058,7 +1058,7 @@ fn mul_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         neg_expr,
         Type::primitive_long(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val("foo"),
             Type::primitive_long(),
             Type::primitive_string(),
@@ -1080,7 +1080,7 @@ fn add_sub_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         add_expr,
         Type::primitive_long(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val("foo"),
             Type::primitive_long(),
             Type::primitive_string(),
@@ -1091,7 +1091,7 @@ fn add_sub_typecheck_fails() {
     assert_typecheck_fails_empty_schema(
         sub_expr,
         Type::primitive_long(),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val("bar"),
             Type::primitive_long(),
             Type::primitive_string(),
@@ -1107,7 +1107,7 @@ fn is_typecheck_fails() {
         schema,
         r#"1 is User"#.parse().unwrap(),
         Some(Type::primitive_boolean()),
-        vec![TypeError::expected_type(
+        vec![TypeDiagnostic::expected_type(
             Expr::val(1),
             Type::any_entity_reference(),
             Type::primitive_long(),
