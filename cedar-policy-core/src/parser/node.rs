@@ -292,4 +292,11 @@ impl<N> ASTNode<Option<N>> {
     {
         f(self.node?, self.info)
     }
+
+    /// Extract the node data `N` if it is present, otherwise return a
+    /// `ParseErrors` containing a `MissingNodeData` error.
+    pub fn ok_or_missing(self) -> Result<N, super::err::ParseErrors> {
+        self.node
+            .ok_or_else(|| super::err::ToASTError::MissingNodeData.into())
+    }
 }
