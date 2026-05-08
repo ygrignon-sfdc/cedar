@@ -308,6 +308,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cedar-json-integration-tests"
+version = "4.10.0"
+dependencies = [
+ "cedar-policy",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cedar-language-server"
 version = "0.0.1"
 dependencies = [

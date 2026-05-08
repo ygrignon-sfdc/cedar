@@ -1,0 +1,15 @@
+[package]
+name = "cedar-json-integration-tests"
+version = "4.10.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Test harness that runs the cedar-json-integration-tests corpus against the in-tree cedar-policy crate to verify JSON serialization parity."
+publish = false
+
+[dependencies]
+
+[dev-dependencies]
+cedar-policy = { version = "=4.10.0", path = "../cedar-policy", features = ["partial-eval"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

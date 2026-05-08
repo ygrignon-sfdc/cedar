@@ -8,6 +8,7 @@ members = [
 	"cedar-testing",
 	"cedar-wasm",
 	"cedar-language-server",
+	"json-integration-tests",
 ]
 
 resolver = "2"
